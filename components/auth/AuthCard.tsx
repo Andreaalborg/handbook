@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import Image from 'next/image'
 
 export function AuthCard({
   title,
@@ -15,13 +16,17 @@ export function AuthCard({
     <div className="min-h-screen flex flex-col items-center justify-center px-4 py-12 bg-gray-50">
       <div className="w-full max-w-md">
         <div className="flex flex-col items-center mb-8">
-          <Link
-            href="/"
-            className="text-2xl font-bold tracking-tight text-blue-700"
-          >
-            IMEM<span className="text-gray-900"> Portal</span>
+          <Link href="/" className="inline-block">
+            <Image
+              src="/imem-logo.webp"
+              alt="IMEM Lifts"
+              width={851}
+              height={198}
+              priority
+              className="h-12 w-auto"
+            />
           </Link>
-          <p className="mt-1 text-sm text-gray-500">Ansattportal</p>
+          <p className="mt-2 text-sm text-gray-500">Ansattportal</p>
         </div>
 
         <div className="card p-8">

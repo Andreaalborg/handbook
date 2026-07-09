@@ -1,34 +1,29 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname } from 'next/navigation'
-import {
-  HomeIcon,
-  ClipboardDocumentListIcon,
-  BookOpenIcon,
-  UsersIcon,
-  EnvelopeIcon,
-} from '@heroicons/react/24/outline'
 import { cn } from '@/lib/utils'
+import { NAV_ITEMS } from './navItems'
 import type { Rolle } from '@/lib/types'
-
-const nav = [
-  { name: 'Oversikt', href: '/dashboard', icon: HomeIcon, adminOnly: false },
-  { name: 'Saker', href: '/saker', icon: ClipboardDocumentListIcon, adminOnly: false },
-  { name: 'Dokumenter', href: '/dokumenter', icon: BookOpenIcon, adminOnly: false },
-  { name: 'Brukere', href: '/admin/brukere', icon: UsersIcon, adminOnly: true },
-  { name: 'Inviter', href: '/admin/inviter', icon: EnvelopeIcon, adminOnly: true },
-]
 
 export function Sidebar({ role }: { role: Rolle }) {
   const pathname = usePathname()
-  const items = nav.filter((i) => !i.adminOnly || role === 'admin')
+  const items = NAV_ITEMS.filter((i) => !i.adminOnly || role === 'admin')
 
   return (
     <aside className="hidden lg:flex lg:flex-col lg:w-64 lg:shrink-0 border-r border-gray-200 bg-white">
       <div className="h-16 flex items-center px-6 border-b border-gray-200">
-        <Link href="/dashboard" className="text-xl font-bold tracking-tight text-blue-700">
-          IMEM<span className="text-gray-900"> Portal</span>
+        <Link href="/dashboard" className="inline-flex items-center gap-2">
+          <Image
+            src="/imem-logo.webp"
+            alt="IMEM Lifts"
+            width={851}
+            height={198}
+            priority
+            className="h-7 w-auto"
+          />
+          <span className="text-sm font-medium text-gray-400">Portal</span>
         </Link>
       </div>
       <nav className="flex-1 px-3 py-4 space-y-1">
