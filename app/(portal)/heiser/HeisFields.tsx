@@ -104,18 +104,6 @@ export function HeisFields({
           />
         </Felt>
 
-        <Felt label="Kontaktperson" htmlFor="kontaktperson">
-          <input id="kontaktperson" name="kontaktperson" defaultValue={heis?.kontaktperson ?? ''} className="form-input" />
-        </Felt>
-
-        <Felt label="Telefon" htmlFor="telefon">
-          <input id="telefon" name="telefon" defaultValue={heis?.telefon ?? ''} className="form-input" />
-        </Felt>
-
-        <Felt label="E-post" htmlFor="epost">
-          <input id="epost" name="epost" type="email" defaultValue={heis?.epost ?? ''} className="form-input" />
-        </Felt>
-
         <Felt label="Service pr. år (1–4)" htmlFor="service_intervall">
           <input
             id="service_intervall"
