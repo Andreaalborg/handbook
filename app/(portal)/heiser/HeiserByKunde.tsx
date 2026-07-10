@@ -5,11 +5,12 @@ import Link from 'next/link'
 import { ChevronRightIcon } from '@heroicons/react/24/outline'
 import { cn } from '@/lib/utils'
 import { ServiceRange, ServiceCount } from '@/components/ui/ServiceRange'
-import type { ServiceStatus } from '@/lib/types'
+import type { HeisType, ServiceStatus } from '@/lib/types'
 
 export interface HeisRad {
   id: string
   navn: string
+  type: HeisType
   tilgang_kode: string | null
   tilgangstider: string | null
   kontaktperson: string | null
@@ -23,9 +24,18 @@ export interface KundeGruppe {
   heiser: HeisRad[]
 }
 
+type Filter = 'service' | 'engangsjobb' | 'alle'
+
+const FILTRE: { key: Filter; label: string }[] = [
+  { key: 'service', label: 'Service' },
+  { key: 'engangsjobb', label: 'Engangsjobber' },
+  { key: 'alle', label: 'Alle' },
+]
+
 export function HeiserByKunde({ grupper }: { grupper: KundeGruppe[] }) {
   // Alle grupper åpne som standard; klikk for å lukke.
   const [lukket, setLukket] = useState<Set<string>>(new Set())
+  const [filter, setFilter] = useState<Filter>('service')
   const toggle = (navn: string) =>
     setLukket((prev) => {
       const neste = new Set(prev)
@@ -33,9 +43,42 @@ export function HeiserByKunde({ grupper }: { grupper: KundeGruppe[] }) {
       return neste
     })
 
+  // Filtrer heiser per type, og skjul kunder som blir tomme.
+  const synlige = grupper
+    .map((g) => ({
+      ...g,
+      heiser: g.heiser.filter((h) => filter === 'alle' || h.type === filter),
+    }))
+    .filter((g) => g.heiser.length > 0)
+
   return (
     <div className="space-y-3">
-      {grupper.map((g) => {
+      {/* Filter */}
+      <div className="inline-flex rounded-lg border border-gray-300 bg-white p-0.5">
+        {FILTRE.map((f) => (
+          <button
+            key={f.key}
+            type="button"
+            onClick={() => setFilter(f.key)}
+            className={cn(
+              'px-3 py-1.5 text-sm font-medium rounded-md transition-colors',
+              filter === f.key
+                ? 'bg-blue-600 text-white'
+                : 'text-gray-600 hover:text-gray-900'
+            )}
+          >
+            {f.label}
+          </button>
+        ))}
+      </div>
+
+      {synlige.length === 0 && (
+        <div className="card p-10 text-center text-gray-500">
+          Ingen heiser i dette filteret.
+        </div>
+      )}
+
+      {synlige.map((g) => {
         const apen = !lukket.has(g.navn)
         return (
           <div key={g.navn} className="card overflow-hidden">
@@ -84,6 +127,7 @@ export function HeiserByKunde({ grupper }: { grupper: KundeGruppe[] }) {
                             >
                               {h.navn}
                             </Link>
+                            {h.type === 'engangsjobb' && <EngangsTag />}
                           </td>
                           <Td>{h.tilgang_kode}</Td>
                           <Td>{h.tilgangstider}</Td>
@@ -113,7 +157,10 @@ export function HeiserByKunde({ grupper }: { grupper: KundeGruppe[] }) {
                       className="block px-4 py-3 hover:bg-gray-50"
                     >
                       <div className="flex items-center justify-between gap-2 mb-2">
-                        <span className="font-medium text-blue-700">{h.navn}</span>
+                        <span className="font-medium text-blue-700">
+                          {h.navn}
+                          {h.type === 'engangsjobb' && <EngangsTag />}
+                        </span>
                         <ServiceCount status={h.service} />
                       </div>
                       <dl className="grid grid-cols-2 gap-x-3 gap-y-1 text-sm">
@@ -166,6 +213,14 @@ function Rad({ label, verdi }: { label: string; verdi: string | null }) {
       <dt className="text-xs text-gray-400">{label}</dt>
       <dd className="text-gray-700">{verdi || '—'}</dd>
     </div>
+  )
+}
+
+function EngangsTag() {
+  return (
+    <span className="ml-2 inline-flex items-center rounded bg-gray-100 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-gray-500 align-middle">
+      Engangsjobb
+    </span>
   )
 }
 

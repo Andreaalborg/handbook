@@ -5,7 +5,7 @@ import { requireProfile } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
 import { createHeis } from '../actions'
 import { HeisFields } from '../HeisFields'
-import type { Kunde } from '@/lib/types'
+import type { Kunde, Profile } from '@/lib/types'
 
 export const metadata: Metadata = { title: 'Ny heis' }
 
@@ -13,8 +13,12 @@ export default async function NyHeisPage() {
   await requireProfile()
   const supabase = await createClient()
 
-  const { data } = await supabase.from('kunder').select('*').order('navn')
-  const kunder = (data ?? []) as Kunde[]
+  const [{ data: kunderData }, { data: montorData }] = await Promise.all([
+    supabase.from('kunder').select('*').order('navn'),
+    supabase.from('profiles').select('*').eq('active', true).order('full_name'),
+  ])
+  const kunder = (kunderData ?? []) as Kunde[]
+  const montorer = (montorData ?? []) as Profile[]
 
   return (
     <>
@@ -40,7 +44,7 @@ export default async function NyHeisPage() {
         )}
 
         <form action={createHeis}>
-          <HeisFields kunder={kunder} />
+          <HeisFields kunder={kunder} montorer={montorer} />
           <div className="pt-6 flex gap-3">
             <button type="submit" className="btn-primary">
               Opprett heis

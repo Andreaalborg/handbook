@@ -33,6 +33,26 @@ export function ServiceRange({ status }: { status: ServiceStatus }) {
   )
 }
 
+/** Statusmerke: Etterslep / Dette kvartalet / À jour. */
+export function ServiceStatusBadge({ status }: { status: ServiceStatus }) {
+  const label =
+    status.status === 'forfalt'
+      ? 'Etterslep'
+      : status.status === 'aktiv'
+        ? 'Dette kvartalet'
+        : 'À jour'
+  return (
+    <span
+      className={cn(
+        'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset',
+        STYLE[status.status]
+      )}
+    >
+      {label}
+    </span>
+  )
+}
+
 /** Viser «utført hittil i år» som f.eks. 2 / 4. */
 export function ServiceCount({ status }: { status: ServiceStatus }) {
   const ferdig = status.hittilIAar >= status.intervall

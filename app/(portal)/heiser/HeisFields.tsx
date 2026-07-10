@@ -1,4 +1,11 @@
-import { TILGANGSTYPER, type Heis, type Kunde } from '@/lib/types'
+import {
+  TILGANGSTYPER,
+  HEIS_TYPE_LABEL,
+  type HeisType,
+  type Heis,
+  type Kunde,
+  type Profile,
+} from '@/lib/types'
 
 /**
  * Feltene for en heis. Brukes både ved oppretting og redigering.
@@ -6,9 +13,11 @@ import { TILGANGSTYPER, type Heis, type Kunde } from '@/lib/types'
  */
 export function HeisFields({
   kunder,
+  montorer,
   heis,
 }: {
   kunder: Kunde[]
+  montorer: Profile[]
   heis?: Heis
 }) {
   return (
@@ -107,9 +116,40 @@ export function HeisFields({
             type="number"
             min={1}
             max={4}
-            defaultValue={heis?.service_intervall ?? 1}
+            defaultValue={heis?.service_intervall ?? 4}
             className="form-input"
           />
+        </Felt>
+
+        <Felt label="Type" htmlFor="type">
+          <select
+            id="type"
+            name="type"
+            defaultValue={heis?.type ?? 'service'}
+            className="form-input"
+          >
+            {(Object.keys(HEIS_TYPE_LABEL) as HeisType[]).map((t) => (
+              <option key={t} value={t}>
+                {HEIS_TYPE_LABEL[t]}
+              </option>
+            ))}
+          </select>
+        </Felt>
+
+        <Felt label="Ansvarlig montør" htmlFor="ansvarlig_montor">
+          <select
+            id="ansvarlig_montor"
+            name="ansvarlig_montor"
+            defaultValue={heis?.ansvarlig_montor ?? ''}
+            className="form-input"
+          >
+            <option value="">— Ingen —</option>
+            {montorer.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.full_name || 'Uten navn'}
+              </option>
+            ))}
+          </select>
         </Felt>
       </div>
 

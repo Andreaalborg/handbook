@@ -62,6 +62,10 @@ function heisFelter(fd: FormData) {
       4,
       Math.max(1, parseInt(String(fd.get('service_intervall') ?? '1'), 10) || 1)
     ),
+    ansvarlig_montor: tekst(fd, 'ansvarlig_montor'),
+    type: String(fd.get('type') ?? 'service') === 'engangsjobb' ? 'engangsjobb' : 'service',
+    // Admin har valgt type i skjemaet → synken skal ikke overstyre den senere.
+    type_manuell: true,
   }
 }
 

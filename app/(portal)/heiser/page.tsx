@@ -59,6 +59,7 @@ export default async function HeiserPage() {
     grupper.get(navn)!.heiser.push({
       id: h.id,
       navn: h.navn,
+      type: h.type,
       tilgang_kode: h.tilgang_kode,
       tilgangstider: h.tilgangstider,
       kontaktperson: h.kontaktperson,

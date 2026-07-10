@@ -54,11 +54,15 @@ export async function syncFraTripletex(): Promise<SyncState> {
     // ---- 2. Heiser (upsert per tripletex_prosjekt_id, bevar lokale felt) ----
     const { data: eksHeiser } = await supabase
       .from('heiser')
-      .select('id, tripletex_prosjekt_id')
+      .select('id, tripletex_prosjekt_id, type_manuell')
       .not('tripletex_prosjekt_id', 'is', null)
     const heisMap = new Map<number, string>()
+    const manuellType = new Map<number, boolean>()
     for (const h of eksHeiser ?? []) {
-      if (h.tripletex_prosjekt_id) heisMap.set(h.tripletex_prosjekt_id, h.id)
+      if (h.tripletex_prosjekt_id) {
+        heisMap.set(h.tripletex_prosjekt_id, h.id)
+        manuellType.set(h.tripletex_prosjekt_id, h.type_manuell)
+      }
     }
 
     let nyeHeiser = 0
@@ -72,9 +76,15 @@ export async function syncFraTripletex(): Promise<SyncState> {
         const patch: Record<string, unknown> = { navn: p.name, kunde_id: kundeId }
         if (adr?.addressLine1) patch.adresse = adr.addressLine1
         if (adr?.city) patch.kommune = adr.city
+        // Type holdes i takt med isOffer, med mindre admin har overstyrt den.
+        if (!manuellType.get(p.id)) {
+          patch.type = p.isOffer ? 'engangsjobb' : 'service'
+        }
         await supabase.from('heiser').update(patch).eq('id', heisMap.get(p.id)!)
         oppdaterteHeiser++
       } else {
+        // Type settes kun ved oppretting (auto fra isOffer). Admin kan
+        // overstyre etterpå — da rører ikke synken den igjen.
         const { data } = await supabase
           .from('heiser')
           .insert({
@@ -82,6 +92,7 @@ export async function syncFraTripletex(): Promise<SyncState> {
             kunde_id: kundeId,
             adresse: adr?.addressLine1 ?? null,
             kommune: adr?.city ?? null,
+            type: p.isOffer ? 'engangsjobb' : 'service',
             tripletex_prosjekt_id: p.id,
           })
           .select('id')
@@ -94,40 +105,46 @@ export async function syncFraTripletex(): Promise<SyncState> {
     }
 
     // ---- 3. Timeføringer -> historikk (dedupe på tripletex_entry_id) ----
-    const tilDato = new Date()
-    const fraDato = new Date()
-    fraDato.setFullYear(fraDato.getFullYear() - 1)
-    const entries = await hentTimeforinger(
-      fraDato.toISOString().slice(0, 10),
-      tilDato.toISOString().slice(0, 10)
-    )
+    // Egen try/catch: timeliste-tilgang kan mangle. Da skal heis-synken
+    // likevel fullføre (bare uten historikk).
+    let loggAntall = 0
+    try {
+      const tilDato = new Date()
+      const fraDato = new Date()
+      // Hent 2 år tilbake så hele 2025 kommer med når timeliste-tilgang er på.
+      fraDato.setFullYear(fraDato.getFullYear() - 2)
+      const entries = await hentTimeforinger(
+        fraDato.toISOString().slice(0, 10),
+        tilDato.toISOString().slice(0, 10)
+      )
 
-    const { data: eksLogg } = await supabase
-      .from('heis_logg')
-      .select('tripletex_entry_id')
-      .not('tripletex_entry_id', 'is', null)
-    const sett = new Set((eksLogg ?? []).map((l) => l.tripletex_entry_id))
+      const { data: eksLogg } = await supabase
+        .from('heis_logg')
+        .select('tripletex_entry_id')
+        .not('tripletex_entry_id', 'is', null)
+      const sett = new Set((eksLogg ?? []).map((l) => l.tripletex_entry_id))
 
-    const nyeLogg = entries
-      .filter((e) => e.project && heisMap.has(e.project.id) && !sett.has(e.id))
-      .map((e) => {
-        const akt = e.activity?.name?.toLowerCase() ?? ''
-        const type: LoggType = akt.includes('service') ? 'service' : 'annet'
-        return {
-          heis_id: heisMap.get(e.project!.id)!,
-          dato: e.date,
-          type,
-          utfort_av: navnFra(e.employee),
-          kommentar: e.comment,
-          tripletex_entry_id: e.id,
-        }
-      })
+      const nyeLogg = entries
+        .filter((e) => e.project && heisMap.has(e.project.id) && !sett.has(e.id))
+        .map((e) => {
+          const akt = e.activity?.name?.toLowerCase() ?? ''
+          const type: LoggType = akt.includes('service') ? 'service' : 'annet'
+          return {
+            heis_id: heisMap.get(e.project!.id)!,
+            dato: e.date,
+            type,
+            utfort_av: navnFra(e.employee),
+            kommentar: e.comment,
+            tripletex_entry_id: e.id,
+          }
+        })
 
-    if (nyeLogg.length > 0) {
-      // Sett inn i porsjoner for å unngå for store forespørsler.
       for (let i = 0; i < nyeLogg.length; i += 500) {
         await supabase.from('heis_logg').insert(nyeLogg.slice(i, i + 500))
       }
+      loggAntall = nyeLogg.length
+    } catch (e) {
+      console.error('Timeføring-synk hoppet over:', e instanceof Error ? e.message : e)
     }
 
     revalidatePath('/heiser')
@@ -139,7 +156,7 @@ export async function syncFraTripletex(): Promise<SyncState> {
         kunder: nyeKunder,
         heiserNye: nyeHeiser,
         heiserOppdatert: oppdaterteHeiser,
-        logg: nyeLogg.length,
+        logg: loggAntall,
       },
     }
   } catch (e) {

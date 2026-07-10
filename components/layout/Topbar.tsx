@@ -1,4 +1,5 @@
 import Image from 'next/image'
+import Link from 'next/link'
 import { logout } from '@/app/(auth)/actions'
 import { MobileNav } from './MobileNav'
 import { ROLLE_LABEL, type Profile } from '@/lib/types'
@@ -28,7 +29,11 @@ export function Topbar({ profile }: { profile: Profile }) {
         </div>
 
         <div className="flex items-center gap-3 sm:gap-4 ml-auto">
-          <div className="flex items-center gap-3">
+          <Link
+            href="/profil"
+            className="flex items-center gap-3 rounded-lg px-1 py-1 hover:bg-gray-50"
+            title="Min profil"
+          >
             <div className="h-9 w-9 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm font-semibold shrink-0">
               {initialer || 'A'}
             </div>
@@ -38,7 +43,7 @@ export function Topbar({ profile }: { profile: Profile }) {
                 {ROLLE_LABEL[profile.role]}
               </div>
             </div>
-          </div>
+          </Link>
 
           <form action={logout}>
             <button

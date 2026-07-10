@@ -14,6 +14,7 @@ import {
   LOGG_TYPE_LABEL,
   type Heis,
   type Kunde,
+  type Profile,
   type HeisLogg,
 } from '@/lib/types'
 
@@ -37,8 +38,12 @@ export default async function HeisDetaljPage({
   if (!heis) notFound()
   const h = heis as Heis
 
-  const { data: kunderData } = await supabase.from('kunder').select('*').order('navn')
+  const [{ data: kunderData }, { data: montorData }] = await Promise.all([
+    supabase.from('kunder').select('*').order('navn'),
+    supabase.from('profiles').select('*').eq('active', true).order('full_name'),
+  ])
   const kunder = (kunderData ?? []) as Kunde[]
+  const montorer = (montorData ?? []) as Profile[]
 
   const { data: loggData } = await supabase
     .from('heis_logg')
@@ -89,7 +94,7 @@ export default async function HeisDetaljPage({
         <section className="lg:col-span-3 card p-6">
           <h2 className="font-semibold text-gray-900 mb-4">Detaljer & tilgang</h2>
           <form action={oppdater}>
-            <HeisFields kunder={kunder} heis={h} />
+            <HeisFields kunder={kunder} montorer={montorer} heis={h} />
             <div className="pt-6">
               <button type="submit" className="btn-primary">
                 Lagre endringer

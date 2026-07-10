@@ -86,10 +86,19 @@ export interface Kunde {
   updated_at: string
 }
 
+export type HeisType = 'service' | 'engangsjobb'
+
+export const HEIS_TYPE_LABEL: Record<HeisType, string> = {
+  service: 'Service',
+  engangsjobb: 'Engangsjobb',
+}
+
 export interface Heis {
   id: string
   kunde_id: string | null
   navn: string
+  type: HeisType
+  type_manuell: boolean
   adresse: string | null
   kommune: string | null
   tilgangstype: string | null
@@ -101,6 +110,7 @@ export interface Heis {
   tilgangstider: string | null
   merknader: string | null
   service_intervall: number
+  ansvarlig_montor: string | null
   tripletex_prosjekt_id: number | null
   created_at: string
   updated_at: string

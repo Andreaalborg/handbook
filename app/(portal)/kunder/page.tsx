@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { requireProfile } from '@/lib/auth'
+import { requireAdmin } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { DeleteButton } from '@/components/ui/DeleteButton'
@@ -9,7 +9,7 @@ import type { Kunde } from '@/lib/types'
 export const metadata: Metadata = { title: 'Kunder' }
 
 export default async function KunderPage() {
-  const profile = await requireProfile()
+  const profile = await requireAdmin()
   const supabase = await createClient()
 
   const { data } = await supabase.from('kunder').select('*').order('navn')
