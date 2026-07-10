@@ -57,6 +57,7 @@ function heisFelter(fd: FormData) {
     telefon: tekst(fd, 'telefon'),
     epost: tekst(fd, 'epost'),
     tilgangstider: tekst(fd, 'tilgangstider'),
+    parkering: tekst(fd, 'parkering'),
     merknader: tekst(fd, 'merknader'),
     service_intervall: Math.min(
       4,

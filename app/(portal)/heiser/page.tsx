@@ -62,6 +62,7 @@ export default async function HeiserPage() {
       type: h.type,
       tilgang_kode: h.tilgang_kode,
       tilgangstider: h.tilgangstider,
+      parkering: h.parkering,
       kontaktperson: h.kontaktperson,
       telefon: h.telefon,
       kort: (kortPerHeis.get(h.id) ?? []).sort(),

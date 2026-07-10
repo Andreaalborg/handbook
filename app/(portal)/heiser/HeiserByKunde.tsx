@@ -13,6 +13,7 @@ export interface HeisRad {
   type: HeisType
   tilgang_kode: string | null
   tilgangstider: string | null
+  parkering: string | null
   kontaktperson: string | null
   telefon: string | null
   kort: string[]
@@ -202,6 +203,16 @@ export function HeiserByKunde({ grupper }: { grupper: KundeGruppe[] }) {
                                 <Chips verdier={h.kort} />
                               </div>
                             </div>
+                            {h.parkering && (
+                              <div className="mt-2">
+                                <span className="text-xs text-gray-400">
+                                  Parkering
+                                </span>
+                                <p className="text-sm text-gray-700 whitespace-pre-wrap">
+                                  {h.parkering}
+                                </p>
+                              </div>
+                            )}
                           </div>
                         )}
 

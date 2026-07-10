@@ -108,6 +108,7 @@ export interface Heis {
   telefon: string | null
   epost: string | null
   tilgangstider: string | null
+  parkering: string | null
   merknader: string | null
   service_intervall: number
   ansvarlig_montor: string | null

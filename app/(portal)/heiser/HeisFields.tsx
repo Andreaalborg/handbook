@@ -153,6 +153,17 @@ export function HeisFields({
         </Felt>
       </div>
 
+      <Felt label="Parkering" htmlFor="parkering">
+        <textarea
+          id="parkering"
+          name="parkering"
+          rows={2}
+          defaultValue={heis?.parkering ?? ''}
+          className="form-input"
+          placeholder="Hvor kan montør parkere? Evt. kode/avtale."
+        />
+      </Felt>
+
       <Felt label="Merknader / kommentarer" htmlFor="merknader">
         <textarea
           id="merknader"
