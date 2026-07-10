@@ -51,6 +51,26 @@ export default async function HeiserPage() {
     kortPerHeis.set(r.heis_id, liste)
   }
 
+  // Koblede kontaktpersoner (fra registeret) per heis.
+  const { data: kontaktRader } = await supabase
+    .from('heis_kontakt')
+    .select('heis_id, kontakter(navn, telefon)')
+  const kontakterPerHeis = new Map<
+    string,
+    { navn: string; telefon: string | null }[]
+  >()
+  for (const r of kontaktRader ?? []) {
+    const k = r.kontakter as unknown as
+      | { navn: string; telefon: string | null }
+      | { navn: string; telefon: string | null }[]
+      | null
+    const kontakt = Array.isArray(k) ? k[0] : k
+    if (!kontakt?.navn) continue
+    const liste = kontakterPerHeis.get(r.heis_id) ?? []
+    liste.push(kontakt)
+    kontakterPerHeis.set(r.heis_id, liste)
+  }
+
   // Grupper per kunde.
   const grupper = new Map<string, KundeGruppe>()
   for (const h of heiser) {
@@ -63,8 +83,7 @@ export default async function HeiserPage() {
       tilgang_kode: h.tilgang_kode,
       tilgangstider: h.tilgangstider,
       parkering: h.parkering,
-      kontaktperson: h.kontaktperson,
-      telefon: h.telefon,
+      kontakter: kontakterPerHeis.get(h.id) ?? [],
       kort: (kortPerHeis.get(h.id) ?? []).sort(),
       service: beregnServiceStatus(datoerPerHeis.get(h.id) ?? [], h.service_intervall),
     })

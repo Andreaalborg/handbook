@@ -14,8 +14,7 @@ export interface HeisRad {
   tilgang_kode: string | null
   tilgangstider: string | null
   parkering: string | null
-  kontaktperson: string | null
-  telefon: string | null
+  kontakter: { navn: string; telefon: string | null }[]
   kort: string[]
   service: ServiceStatus
 }
@@ -128,8 +127,7 @@ export function HeiserByKunde({ grupper }: { grupper: KundeGruppe[] }) {
                         <Th>Heis</Th>
                         <Th>Kode</Th>
                         <Th>Tilgangstid</Th>
-                        <Th>Kontaktperson</Th>
-                        <Th>Telefon</Th>
+                        <Th>Kontakt</Th>
                         <Th>Kort</Th>
                         <Th>Service i år</Th>
                         <Th>Neste service</Th>
@@ -149,8 +147,9 @@ export function HeiserByKunde({ grupper }: { grupper: KundeGruppe[] }) {
                           </td>
                           <Td>{h.tilgang_kode}</Td>
                           <Td>{h.tilgangstider}</Td>
-                          <Td>{h.kontaktperson}</Td>
-                          <Td>{h.telefon}</Td>
+                          <td className="px-4 py-3">
+                            <Kontakter kontakter={h.kontakter} />
+                          </td>
                           <td className="px-4 py-3">
                             <Chips verdier={h.kort} />
                           </td>
@@ -194,9 +193,13 @@ export function HeiserByKunde({ grupper }: { grupper: KundeGruppe[] }) {
                             <dl className="grid grid-cols-2 gap-x-3 gap-y-1 text-sm">
                               <Rad label="Kode" verdi={h.tilgang_kode} />
                               <Rad label="Tilgangstid" verdi={h.tilgangstider} />
-                              <Rad label="Kontakt" verdi={h.kontaktperson} />
-                              <Rad label="Telefon" verdi={h.telefon} />
                             </dl>
+                            <div className="mt-2">
+                              <span className="text-xs text-gray-400">Kontakt</span>
+                              <div className="mt-0.5">
+                                <Kontakter kontakter={h.kontakter} />
+                              </div>
+                            </div>
                             <div className="mt-2">
                               <span className="text-xs text-gray-400">Kort</span>
                               <div className="mt-0.5">
@@ -257,6 +260,35 @@ function Rad({ label, verdi }: { label: string; verdi: string | null }) {
     <div>
       <dt className="text-xs text-gray-400">{label}</dt>
       <dd className="text-gray-700">{verdi || '—'}</dd>
+    </div>
+  )
+}
+
+function Kontakter({
+  kontakter,
+}: {
+  kontakter: { navn: string; telefon: string | null }[]
+}) {
+  if (kontakter.length === 0)
+    return <span className="text-sm text-gray-400">—</span>
+  return (
+    <div className="space-y-0.5">
+      {kontakter.map((k, i) => (
+        <div key={i} className="text-sm text-gray-700 whitespace-nowrap">
+          {k.navn}
+          {k.telefon && (
+            <>
+              {' '}
+              <a
+                href={`tel:${k.telefon.replace(/\s/g, '')}`}
+                className="text-blue-700 hover:underline"
+              >
+                {k.telefon}
+              </a>
+            </>
+          )}
+        </div>
+      ))}
     </div>
   )
 }
