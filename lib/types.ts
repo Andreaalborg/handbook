@@ -24,11 +24,21 @@ export interface Sak {
   updated_at: string
 }
 
+export interface Mappe {
+  id: string
+  navn: string
+  parent_id: string | null
+  opprettet_av: string | null
+  created_at: string
+}
+
 export interface Dokument {
   id: string
   tittel: string
   kategori: string | null
   fil_sti: string | null
+  mappe_id: string | null
+  storrelse: number | null
   synlig_for: 'alle' | 'admin'
   opprettet_av: string | null
   created_at: string
