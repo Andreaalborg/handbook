@@ -1,11 +1,20 @@
 import {
   TILGANGSTYPER,
   HEIS_TYPE_LABEL,
+  KONTAKT_KATEGORI_LABEL,
   type HeisType,
+  type KontaktKategori,
   type Heis,
   type Kunde,
   type Profile,
 } from '@/lib/types'
+
+export interface KontaktValg {
+  id: string
+  navn: string
+  kategori: KontaktKategori
+  telefon: string | null
+}
 
 /**
  * Feltene for en heis. Brukes både ved oppretting og redigering.
@@ -14,12 +23,17 @@ import {
 export function HeisFields({
   kunder,
   montorer,
+  kontakter,
+  valgteKontaktIds = [],
   heis,
 }: {
   kunder: Kunde[]
   montorer: Profile[]
+  kontakter: KontaktValg[]
+  valgteKontaktIds?: string[]
   heis?: Heis
 }) {
+  const valgt = new Set(valgteKontaktIds)
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -151,6 +165,40 @@ export function HeisFields({
             ))}
           </select>
         </Felt>
+      </div>
+
+      {/* Koble kontaktpersoner fra registeret */}
+      <div>
+        <span className="form-label">Kontaktpersoner (fra registeret)</span>
+        {kontakter.length === 0 ? (
+          <p className="text-sm text-gray-500">
+            Ingen kontakter ennå. Legg dem inn under Kontakter først.
+          </p>
+        ) : (
+          <div className="max-h-56 overflow-y-auto rounded-md border border-gray-300 divide-y divide-gray-100">
+            {kontakter.map((k) => (
+              <label
+                key={k.id}
+                className="flex items-center gap-3 px-3 py-2 hover:bg-gray-50 cursor-pointer"
+              >
+                <input
+                  type="checkbox"
+                  name="kontakt_ids"
+                  value={k.id}
+                  defaultChecked={valgt.has(k.id)}
+                  className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+                <span className="text-sm text-gray-900">{k.navn}</span>
+                <span className="text-xs text-gray-400">
+                  {KONTAKT_KATEGORI_LABEL[k.kategori]}
+                </span>
+                {k.telefon && (
+                  <span className="ml-auto text-xs text-gray-400">{k.telefon}</span>
+                )}
+              </label>
+            ))}
+          </div>
+        )}
       </div>
 
       <Felt label="Parkering" htmlFor="parkering">

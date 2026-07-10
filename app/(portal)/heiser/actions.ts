@@ -70,6 +70,20 @@ function heisFelter(fd: FormData) {
   }
 }
 
+/** Synk koblede kontaktpersoner til nøyaktig de valgte. */
+async function syncKontakter(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  heisId: string,
+  kontaktIds: string[]
+) {
+  await supabase.from('heis_kontakt').delete().eq('heis_id', heisId)
+  if (kontaktIds.length > 0) {
+    await supabase
+      .from('heis_kontakt')
+      .insert(kontaktIds.map((kontakt_id) => ({ heis_id: heisId, kontakt_id })))
+  }
+}
+
 export async function createHeis(formData: FormData) {
   await requireProfile()
   const supabase = await createClient()
@@ -88,6 +102,9 @@ export async function createHeis(formData: FormData) {
     return
   }
 
+  const kontaktIds = formData.getAll('kontakt_ids').map(String).filter(Boolean)
+  await syncKontakter(supabase, data.id, kontaktIds)
+
   revalidatePath('/heiser')
   redirect(`/heiser/${data.id}`)
 }
@@ -101,6 +118,9 @@ export async function updateHeis(heisId: string, formData: FormData) {
 
   const { error } = await supabase.from('heiser').update(felter).eq('id', heisId)
   if (error) console.error('updateHeis:', error.message)
+
+  const kontaktIds = formData.getAll('kontakt_ids').map(String).filter(Boolean)
+  await syncKontakter(supabase, heisId, kontaktIds)
 
   revalidatePath(`/heiser/${heisId}`)
   revalidatePath('/heiser')

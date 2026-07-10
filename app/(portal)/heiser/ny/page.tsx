@@ -4,7 +4,7 @@ import { ArrowLeftIcon } from '@heroicons/react/24/outline'
 import { requireProfile } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
 import { createHeis } from '../actions'
-import { HeisFields } from '../HeisFields'
+import { HeisFields, type KontaktValg } from '../HeisFields'
 import type { Kunde, Profile } from '@/lib/types'
 
 export const metadata: Metadata = { title: 'Ny heis' }
@@ -13,12 +13,15 @@ export default async function NyHeisPage() {
   await requireProfile()
   const supabase = await createClient()
 
-  const [{ data: kunderData }, { data: montorData }] = await Promise.all([
-    supabase.from('kunder').select('*').order('navn'),
-    supabase.from('profiles').select('*').eq('active', true).order('full_name'),
-  ])
+  const [{ data: kunderData }, { data: montorData }, { data: kontaktData }] =
+    await Promise.all([
+      supabase.from('kunder').select('*').order('navn'),
+      supabase.from('profiles').select('*').eq('active', true).order('full_name'),
+      supabase.from('kontakter').select('id, navn, kategori, telefon').order('navn'),
+    ])
   const kunder = (kunderData ?? []) as Kunde[]
   const montorer = (montorData ?? []) as Profile[]
+  const kontakter = (kontaktData ?? []) as KontaktValg[]
 
   return (
     <>
@@ -44,7 +47,7 @@ export default async function NyHeisPage() {
         )}
 
         <form action={createHeis}>
-          <HeisFields kunder={kunder} montorer={montorer} />
+          <HeisFields kunder={kunder} montorer={montorer} kontakter={kontakter} />
           <div className="pt-6 flex gap-3">
             <button type="submit" className="btn-primary">
               Opprett heis

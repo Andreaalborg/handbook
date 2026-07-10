@@ -4,7 +4,7 @@ import type { Metadata } from 'next'
 import { ArrowLeftIcon } from '@heroicons/react/24/outline'
 import { requireProfile } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
-import { HeisFields } from '../HeisFields'
+import { HeisFields, type KontaktValg } from '../HeisFields'
 import { updateHeis, deleteHeis, deleteLogg } from '../actions'
 import { LoggForm } from './LoggForm'
 import { DeleteButton } from '@/components/ui/DeleteButton'
@@ -12,6 +12,7 @@ import { ServiceRange, ServiceCount } from '@/components/ui/ServiceRange'
 import {
   beregnServiceStatus,
   LOGG_TYPE_LABEL,
+  KONTAKT_KATEGORI_LABEL,
   type Heis,
   type Kunde,
   type Profile,
@@ -38,12 +39,18 @@ export default async function HeisDetaljPage({
   if (!heis) notFound()
   const h = heis as Heis
 
-  const [{ data: kunderData }, { data: montorData }] = await Promise.all([
-    supabase.from('kunder').select('*').order('navn'),
-    supabase.from('profiles').select('*').eq('active', true).order('full_name'),
-  ])
+  const [{ data: kunderData }, { data: montorData }, { data: kontaktData }, { data: koblinger }] =
+    await Promise.all([
+      supabase.from('kunder').select('*').order('navn'),
+      supabase.from('profiles').select('*').eq('active', true).order('full_name'),
+      supabase.from('kontakter').select('id, navn, kategori, telefon, epost').order('navn'),
+      supabase.from('heis_kontakt').select('kontakt_id').eq('heis_id', id),
+    ])
   const kunder = (kunderData ?? []) as Kunde[]
   const montorer = (montorData ?? []) as Profile[]
+  const kontakter = (kontaktData ?? []) as (KontaktValg & { epost: string | null })[]
+  const valgteKontaktIds = (koblinger ?? []).map((k) => k.kontakt_id)
+  const kobledeKontakter = kontakter.filter((k) => valgteKontaktIds.includes(k.id))
 
   const { data: loggData } = await supabase
     .from('heis_logg')
@@ -94,7 +101,13 @@ export default async function HeisDetaljPage({
         <section className="lg:col-span-3 card p-6">
           <h2 className="font-semibold text-gray-900 mb-4">Detaljer & tilgang</h2>
           <form action={oppdater}>
-            <HeisFields kunder={kunder} montorer={montorer} heis={h} />
+            <HeisFields
+              kunder={kunder}
+              montorer={montorer}
+              kontakter={kontakter}
+              valgteKontaktIds={valgteKontaktIds}
+              heis={h}
+            />
             <div className="pt-6">
               <button type="submit" className="btn-primary">
                 Lagre endringer
@@ -110,11 +123,47 @@ export default async function HeisDetaljPage({
           </p>
         </section>
 
-        {/* Historikk / arbeidslogg */}
-        <section className="lg:col-span-2 card p-6 h-fit">
-          <h2 className="font-semibold text-gray-900 mb-4">Historikk</h2>
+        {/* Kontaktpersoner + historikk */}
+        <div className="lg:col-span-2 space-y-6">
+          {kobledeKontakter.length > 0 && (
+            <section className="card p-6">
+              <h2 className="font-semibold text-gray-900 mb-4">Kontaktpersoner</h2>
+              <ul className="space-y-2.5">
+                {kobledeKontakter.map((k) => (
+                  <li
+                    key={k.id}
+                    className="flex items-center justify-between gap-2"
+                  >
+                    <div className="min-w-0">
+                      <Link
+                        href={`/kontakter/${k.id}`}
+                        className="text-sm font-medium text-gray-900 hover:text-blue-700"
+                      >
+                        {k.navn}
+                      </Link>
+                      <span className="ml-2 text-xs text-gray-400">
+                        {KONTAKT_KATEGORI_LABEL[k.kategori]}
+                      </span>
+                    </div>
+                    {k.telefon && (
+                      <a
+                        href={`tel:${k.telefon.replace(/\s/g, '')}`}
+                        className="shrink-0 text-sm text-blue-700 hover:underline"
+                      >
+                        {k.telefon}
+                      </a>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
 
-          <LoggForm heisId={h.id} />
+          {/* Historikk / arbeidslogg */}
+          <section className="card p-6 h-fit">
+            <h2 className="font-semibold text-gray-900 mb-4">Historikk</h2>
+
+            <LoggForm heisId={h.id} />
 
           <div className="mt-6 border-t border-gray-100 pt-4">
             {logg.length === 0 ? (
@@ -159,8 +208,9 @@ export default async function HeisDetaljPage({
                 ))}
               </ul>
             )}
-          </div>
-        </section>
+            </div>
+          </section>
+        </div>
       </div>
     </>
   )
