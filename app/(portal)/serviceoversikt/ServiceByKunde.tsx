@@ -46,10 +46,11 @@ export function ServiceByKunde({ grupper }: { grupper: ServiceKundeGruppe[] }) {
 
       {grupper.map((g) => {
         const apen = apne.has(g.navn)
-        // Antall som krever handling (etterslep + dette kvartalet).
-        const krever = g.rader.filter(
-          (r) => r.service.status !== 'kommende'
-        ).length
+        // Aggregert for kunden: utført / planlagt (år), og om noe ligger bak
+        // eller forfaller dette kvartalet.
+        const utfort = g.rader.reduce((s, r) => s + r.service.hittilIAar, 0)
+        const planlagt = g.rader.reduce((s, r) => s + r.service.intervall, 0)
+        const bak = g.rader.some((r) => r.service.status !== 'kommende')
         return (
           <div key={g.navn} className="card overflow-hidden">
             <button
@@ -59,18 +60,22 @@ export function ServiceByKunde({ grupper }: { grupper: ServiceKundeGruppe[] }) {
             >
               <ChevronRightIcon
                 className={cn(
-                  'h-5 w-5 text-gray-400 transition-transform',
+                  'h-5 w-5 shrink-0 text-gray-400 transition-transform',
                   apen && 'rotate-90'
                 )}
               />
               <span className="font-semibold text-gray-900">{g.navn}</span>
-              {krever > 0 && (
-                <span className="rounded-full bg-red-50 px-2 py-0.5 text-xs font-medium text-red-700 ring-1 ring-inset ring-red-600/20">
-                  {krever} å gjøre
+              <span
+                className={cn(
+                  'ml-auto shrink-0 inline-flex items-center rounded-md px-2 py-0.5 text-xs font-semibold',
+                  bak ? 'bg-red-50' : 'bg-green-50'
+                )}
+                title={bak ? 'Service ligger bak / forfaller' : 'À jour dette kvartalet'}
+              >
+                <span className={bak ? 'text-red-700' : 'text-green-700'}>
+                  {utfort}
                 </span>
-              )}
-              <span className="ml-auto text-sm text-gray-400">
-                {g.rader.length} heis{g.rader.length === 1 ? '' : 'er'}
+                <span className="text-gray-500">/{planlagt}</span>
               </span>
             </button>
 
