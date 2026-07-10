@@ -36,10 +36,17 @@ export function HeiserByKunde({ grupper }: { grupper: KundeGruppe[] }) {
   // Alle grupper åpne som standard; klikk for å lukke.
   const [lukket, setLukket] = useState<Set<string>>(new Set())
   const [filter, setFilter] = useState<Filter>('service')
+  const [apneHeiser, setApneHeiser] = useState<Set<string>>(new Set())
   const toggle = (navn: string) =>
     setLukket((prev) => {
       const neste = new Set(prev)
       neste.has(navn) ? neste.delete(navn) : neste.add(navn)
+      return neste
+    })
+  const toggleHeis = (id: string) =>
+    setApneHeiser((prev) => {
+      const neste = new Set(prev)
+      neste.has(id) ? neste.delete(id) : neste.add(id)
       return neste
     })
 
@@ -148,39 +155,56 @@ export function HeiserByKunde({ grupper }: { grupper: KundeGruppe[] }) {
                   </table>
                 </div>
 
-                {/* Mobil: kort */}
+                {/* Mobil: kompakte kort med «Vis mer» */}
                 <div className="md:hidden divide-y divide-gray-100">
-                  {g.heiser.map((h) => (
-                    <Link
-                      key={h.id}
-                      href={`/heiser/${h.id}`}
-                      className="block px-4 py-3 hover:bg-gray-50"
-                    >
-                      <div className="flex items-center justify-between gap-2 mb-2">
-                        <span className="font-medium text-blue-700">
-                          {h.navn}
-                          {h.type === 'engangsjobb' && <EngangsTag />}
-                        </span>
-                        <ServiceCount status={h.service} />
-                      </div>
-                      <dl className="grid grid-cols-2 gap-x-3 gap-y-1 text-sm">
-                        <Rad label="Kode" verdi={h.tilgang_kode} />
-                        <Rad label="Tilgangstid" verdi={h.tilgangstider} />
-                        <Rad label="Kontakt" verdi={h.kontaktperson} />
-                        <Rad label="Telefon" verdi={h.telefon} />
-                      </dl>
-                      <div className="mt-2">
-                        <span className="text-xs text-gray-400">Kort</span>
-                        <div className="mt-0.5">
-                          <Chips verdier={h.kort} />
+                  {g.heiser.map((h) => {
+                    const utvidet = apneHeiser.has(h.id)
+                    return (
+                      <div key={h.id} className="px-4 py-3">
+                        {/* Alltid synlig: navn, utført, neste service */}
+                        <div className="flex items-center justify-between gap-2">
+                          <Link
+                            href={`/heiser/${h.id}`}
+                            className="font-medium text-blue-700"
+                          >
+                            {h.navn}
+                            {h.type === 'engangsjobb' && <EngangsTag />}
+                          </Link>
+                          <ServiceCount status={h.service} />
                         </div>
+                        <div className="mt-1.5 flex items-center gap-2 text-sm">
+                          <span className="text-gray-500">Neste:</span>
+                          <ServiceRange status={h.service} />
+                        </div>
+
+                        {/* Resten bak «Vis mer» */}
+                        {utvidet && (
+                          <div className="mt-3">
+                            <dl className="grid grid-cols-2 gap-x-3 gap-y-1 text-sm">
+                              <Rad label="Kode" verdi={h.tilgang_kode} />
+                              <Rad label="Tilgangstid" verdi={h.tilgangstider} />
+                              <Rad label="Kontakt" verdi={h.kontaktperson} />
+                              <Rad label="Telefon" verdi={h.telefon} />
+                            </dl>
+                            <div className="mt-2">
+                              <span className="text-xs text-gray-400">Kort</span>
+                              <div className="mt-0.5">
+                                <Chips verdier={h.kort} />
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        <button
+                          type="button"
+                          onClick={() => toggleHeis(h.id)}
+                          className="mt-2 text-sm font-medium text-blue-600 hover:text-blue-700"
+                        >
+                          {utvidet ? 'Vis mindre' : 'Vis mer'}
+                        </button>
                       </div>
-                      <div className="mt-2 flex items-center gap-2 text-sm">
-                        <span className="text-gray-500">Neste:</span>
-                        <ServiceRange status={h.service} />
-                      </div>
-                    </Link>
-                  ))}
+                    )
+                  })}
                 </div>
               </div>
             )}
