@@ -9,6 +9,7 @@ import {
   KeyIcon,
   BellAlertIcon,
   WrenchScrewdriverIcon,
+  UserGroupIcon,
 } from '@heroicons/react/24/outline'
 
 export interface NavItem {
@@ -23,6 +24,7 @@ export const NAV_ITEMS: NavItem[] = [
   { name: 'Heiser', href: '/heiser', icon: BuildingOffice2Icon, adminOnly: false },
   { name: 'Serviceoversikt', href: '/serviceoversikt', icon: WrenchScrewdriverIcon, adminOnly: true },
   { name: 'Tilgangskort', href: '/tilgangskort', icon: KeyIcon, adminOnly: false },
+  { name: 'Kontakter', href: '/kontakter', icon: UserGroupIcon, adminOnly: false },
   { name: 'Heisalarmer', href: '/heisalarmer', icon: BellAlertIcon, adminOnly: false },
   { name: 'Kunder', href: '/kunder', icon: BriefcaseIcon, adminOnly: true },
   { name: 'Saker', href: '/saker', icon: ClipboardDocumentListIcon, adminOnly: false },

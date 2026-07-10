@@ -3,11 +3,7 @@ import type { Metadata } from 'next'
 import { requireAdmin } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
 import { PageHeader } from '@/components/ui/PageHeader'
-import {
-  ServiceRange,
-  ServiceCount,
-  ServiceStatusBadge,
-} from '@/components/ui/ServiceRange'
+import { ServiceByKunde, type ServiceKundeGruppe } from './ServiceByKunde'
 import { beregnServiceStatus, type Heis, type ServiceStatus } from '@/lib/types'
 
 export const metadata: Metadata = { title: 'Serviceoversikt' }
@@ -61,10 +57,12 @@ export default async function ServiceoversiktPage() {
     const navn = r.heis.kunder?.navn ?? 'Uten kunde'
     ;(grupper.get(navn) ?? grupper.set(navn, []).get(navn)!).push(r)
   }
-  const grupperListe = [...grupper.entries()]
+  const grupperListe: ServiceKundeGruppe[] = [...grupper.entries()]
     .map(([navn, r]) => ({
       navn,
-      rader: r.sort((a, b) => STATUS_PRIO[a.service.status] - STATUS_PRIO[b.service.status]),
+      rader: r
+        .sort((a, b) => STATUS_PRIO[a.service.status] - STATUS_PRIO[b.service.status])
+        .map((x) => ({ id: x.heis.id, navn: x.heis.navn, service: x.service })),
     }))
     .sort((a, b) => a.navn.localeCompare(b.navn, 'nb'))
 
@@ -95,50 +93,7 @@ export default async function ServiceoversiktPage() {
           .
         </div>
       ) : (
-        <div className="space-y-6">
-          {grupperListe.map((g) => (
-            <section key={g.navn} className="card overflow-hidden">
-              <div className="px-4 py-3 border-b border-gray-100 bg-gray-50">
-                <h2 className="font-semibold text-gray-900">{g.navn}</h2>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-white">
-                    <tr>
-                      <Th>Heis</Th>
-                      <Th>Utført i år</Th>
-                      <Th>Neste service</Th>
-                      <Th>Status</Th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100">
-                    {g.rader.map(({ heis, service }) => (
-                      <tr key={heis.id} className="hover:bg-gray-50">
-                        <td className="px-4 py-3">
-                          <Link
-                            href={`/heiser/${heis.id}`}
-                            className="text-sm font-medium text-blue-700 hover:underline"
-                          >
-                            {heis.navn}
-                          </Link>
-                        </td>
-                        <td className="px-4 py-3">
-                          <ServiceCount status={service} />
-                        </td>
-                        <td className="px-4 py-3">
-                          <ServiceRange status={service} />
-                        </td>
-                        <td className="px-4 py-3">
-                          <ServiceStatusBadge status={service} />
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </section>
-          ))}
-        </div>
+        <ServiceByKunde grupper={grupperListe} />
       )}
     </>
   )
@@ -164,13 +119,5 @@ function Stat({
       <p className="text-xs text-gray-500">{label}</p>
       <p className={`mt-1 text-2xl font-bold ${farge}`}>{value}</p>
     </div>
-  )
-}
-
-function Th({ children }: { children: React.ReactNode }) {
-  return (
-    <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 whitespace-nowrap">
-      {children}
-    </th>
   )
 }

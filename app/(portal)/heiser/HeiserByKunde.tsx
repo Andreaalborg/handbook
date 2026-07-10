@@ -34,11 +34,12 @@ const FILTRE: { key: Filter; label: string }[] = [
 
 export function HeiserByKunde({ grupper }: { grupper: KundeGruppe[] }) {
   // Alle grupper åpne som standard; klikk for å lukke.
-  const [lukket, setLukket] = useState<Set<string>>(new Set())
+  // Standard: alle grupper lukket. `apne` inneholder de som er åpne.
+  const [apne, setApne] = useState<Set<string>>(new Set())
   const [filter, setFilter] = useState<Filter>('service')
   const [apneHeiser, setApneHeiser] = useState<Set<string>>(new Set())
   const toggle = (navn: string) =>
-    setLukket((prev) => {
+    setApne((prev) => {
       const neste = new Set(prev)
       neste.has(navn) ? neste.delete(navn) : neste.add(navn)
       return neste
@@ -58,25 +59,34 @@ export function HeiserByKunde({ grupper }: { grupper: KundeGruppe[] }) {
     }))
     .filter((g) => g.heiser.length > 0)
 
+  const alleApne = synlige.length > 0 && synlige.every((g) => apne.has(g.navn))
+  const toggleAlle = () =>
+    setApne(alleApne ? new Set() : new Set(synlige.map((g) => g.navn)))
+
   return (
     <div className="space-y-3">
-      {/* Filter */}
-      <div className="inline-flex rounded-lg border border-gray-300 bg-white p-0.5">
-        {FILTRE.map((f) => (
-          <button
-            key={f.key}
-            type="button"
-            onClick={() => setFilter(f.key)}
-            className={cn(
-              'px-3 py-1.5 text-sm font-medium rounded-md transition-colors',
-              filter === f.key
-                ? 'bg-blue-600 text-white'
-                : 'text-gray-600 hover:text-gray-900'
-            )}
-          >
-            {f.label}
-          </button>
-        ))}
+      {/* Filter + åpne/lukk alle */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="inline-flex rounded-lg border border-gray-300 bg-white p-0.5">
+          {FILTRE.map((f) => (
+            <button
+              key={f.key}
+              type="button"
+              onClick={() => setFilter(f.key)}
+              className={cn(
+                'px-3 py-1.5 text-sm font-medium rounded-md transition-colors',
+                filter === f.key
+                  ? 'bg-blue-600 text-white'
+                  : 'text-gray-600 hover:text-gray-900'
+              )}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
+        <button type="button" onClick={toggleAlle} className="btn-secondary">
+          {alleApne ? 'Lukk alle' : 'Åpne alle'}
+        </button>
       </div>
 
       {synlige.length === 0 && (
@@ -86,7 +96,7 @@ export function HeiserByKunde({ grupper }: { grupper: KundeGruppe[] }) {
       )}
 
       {synlige.map((g) => {
-        const apen = !lukket.has(g.navn)
+        const apen = apne.has(g.navn)
         return (
           <div key={g.navn} className="card overflow-hidden">
             {/* Kunde-header (dropdown) */}

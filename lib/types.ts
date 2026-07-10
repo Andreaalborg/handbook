@@ -134,6 +134,34 @@ export interface Tilgangskort {
   updated_at: string
 }
 
+export type KontaktKategori =
+  | 'vaktmester'
+  | 'nokkelperson'
+  | 'fabrikk'
+  | 'support'
+  | 'annet'
+
+export const KONTAKT_KATEGORI_LABEL: Record<KontaktKategori, string> = {
+  vaktmester: 'Vaktmester',
+  nokkelperson: 'Nøkkelperson',
+  fabrikk: 'Fabrikk',
+  support: 'Support',
+  annet: 'Annet',
+}
+
+export interface Kontakt {
+  id: string
+  navn: string
+  kategori: KontaktKategori
+  firma: string | null
+  telefon: string | null
+  epost: string | null
+  kunde_id: string | null
+  merknader: string | null
+  created_at: string
+  updated_at: string
+}
+
 export interface HeisLogg {
   id: string
   heis_id: string
