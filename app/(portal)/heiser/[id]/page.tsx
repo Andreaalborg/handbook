@@ -62,7 +62,11 @@ export default async function HeisDetaljPage({
   const serviceDatoer = logg
     .filter((l) => l.type === 'service')
     .map((l) => l.dato)
-  const service = beregnServiceStatus(serviceDatoer, h.service_intervall)
+  const service = beregnServiceStatus(
+    serviceDatoer,
+    h.service_intervall,
+    h.oppstartsdato
+  )
 
   const isAdmin = profile.role === 'admin'
   const oppdater = updateHeis.bind(null, h.id)

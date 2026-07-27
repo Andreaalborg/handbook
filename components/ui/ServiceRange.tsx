@@ -53,9 +53,9 @@ export function ServiceStatusBadge({ status }: { status: ServiceStatus }) {
   )
 }
 
-/** Viser «utført hittil i år» som f.eks. 2 / 4. */
+/** Viser «utført hittil i år» som f.eks. 2 / 4 (justert for oppstartsdato). */
 export function ServiceCount({ status }: { status: ServiceStatus }) {
-  const ferdig = status.hittilIAar >= status.intervall
+  const ferdig = status.hittilIAar >= status.planlagtIAar
   return (
     <span
       className={cn(
@@ -63,7 +63,7 @@ export function ServiceCount({ status }: { status: ServiceStatus }) {
         ferdig ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'
       )}
     >
-      {status.hittilIAar} / {status.intervall}
+      {status.hittilIAar} / {status.planlagtIAar}
     </span>
   )
 }

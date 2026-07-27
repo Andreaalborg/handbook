@@ -54,14 +54,16 @@ export async function syncFraTripletex(): Promise<SyncState> {
     // ---- 2. Heiser (upsert per tripletex_prosjekt_id, bevar lokale felt) ----
     const { data: eksHeiser } = await supabase
       .from('heiser')
-      .select('id, tripletex_prosjekt_id, type_manuell')
+      .select('id, tripletex_prosjekt_id, type_manuell, oppstartsdato')
       .not('tripletex_prosjekt_id', 'is', null)
     const heisMap = new Map<number, string>()
     const manuellType = new Map<number, boolean>()
+    const harOppstart = new Map<number, boolean>()
     for (const h of eksHeiser ?? []) {
       if (h.tripletex_prosjekt_id) {
         heisMap.set(h.tripletex_prosjekt_id, h.id)
         manuellType.set(h.tripletex_prosjekt_id, h.type_manuell)
+        harOppstart.set(h.tripletex_prosjekt_id, !!h.oppstartsdato)
       }
     }
 
@@ -80,6 +82,10 @@ export async function syncFraTripletex(): Promise<SyncState> {
         if (!manuellType.get(p.id)) {
           patch.type = p.isOffer ? 'engangsjobb' : 'service'
         }
+        // Fyll oppstartsdato fra Tripletex kun der den ikke er satt manuelt.
+        if (!harOppstart.get(p.id) && p.startDate) {
+          patch.oppstartsdato = p.startDate
+        }
         await supabase.from('heiser').update(patch).eq('id', heisMap.get(p.id)!)
         oppdaterteHeiser++
       } else {
@@ -93,6 +99,7 @@ export async function syncFraTripletex(): Promise<SyncState> {
             adresse: adr?.addressLine1 ?? null,
             kommune: adr?.city ?? null,
             type: p.isOffer ? 'engangsjobb' : 'service',
+            oppstartsdato: p.startDate ?? null,
             tripletex_prosjekt_id: p.id,
           })
           .select('id')

@@ -85,7 +85,11 @@ export default async function HeiserPage() {
       parkering: h.parkering,
       kontakter: kontakterPerHeis.get(h.id) ?? [],
       kort: (kortPerHeis.get(h.id) ?? []).sort(),
-      service: beregnServiceStatus(datoerPerHeis.get(h.id) ?? [], h.service_intervall),
+      service: beregnServiceStatus(
+        datoerPerHeis.get(h.id) ?? [],
+        h.service_intervall,
+        h.oppstartsdato
+      ),
     })
   }
   const grupperListe = [...grupper.values()].sort((a, b) =>

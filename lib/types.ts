@@ -121,6 +121,7 @@ export interface Heis {
   parkering: string | null
   merknader: string | null
   service_intervall: number
+  oppstartsdato: string | null
   ansvarlig_montor: string | null
   tripletex_prosjekt_id: number | null
   created_at: string
@@ -189,7 +190,8 @@ export type ServiceStatusType = 'forfalt' | 'aktiv' | 'kommende'
 
 export interface ServiceStatus {
   hittilIAar: number // antall servicer utført i inneværende år
-  intervall: number // planlagte servicer per år
+  planlagtIAar: number // planlagte servicer i år (justert for oppstartsdato)
+  intervall: number // årlig rate (1–4)
   nesteStart: string // ISO yyyy-mm-dd
   nesteSlutt: string // ISO yyyy-mm-dd
   status: ServiceStatusType
@@ -201,40 +203,73 @@ function iso(d: Date): string {
   ).padStart(2, '0')}`
 }
 
+/** Parser 'YYYY-MM-DD' som lokal dato (unngår tidssone-skli). */
+function lokalDato(s: string): Date {
+  const [y, m, d] = s.split('-').map(Number)
+  return new Date(y, (m || 1) - 1, d || 1)
+}
+
 /**
  * Periode-basert service-status. Året deles i `intervall` like perioder
- * (4/år = kvartaler). Neste service forfaller i den neste perioden som ikke
- * har hatt service ennå. Returnerer også hvor mange servicer som er utført
- * hittil i år.
+ * (4/år = kvartaler). For nye/moderniserte heiser teller kun perioder som
+ * *starter etter* oppstartsdato det første året – slik at en heis satt opp
+ * midt i året ikke får etterslep for kvartaler den ikke var i drift.
  */
 export function beregnServiceStatus(
   serviceDatoer: string[],
   intervall: number,
+  oppstartsdato: string | null = null,
   iDag: Date = new Date()
 ): ServiceStatus {
   const n = Math.min(4, Math.max(1, intervall))
   const mndPerPeriode = 12 / n
   const aar = iDag.getFullYear()
-  const hittilIAar = serviceDatoer.filter(
-    (d) => new Date(d).getFullYear() === aar
-  ).length
+  const t = new Date(iDag.getFullYear(), iDag.getMonth(), iDag.getDate())
 
-  // Neste uservicede periode. Er alle utført i år → periode 1 neste år.
-  let periodeAar = aar
-  let idx = hittilIAar
-  if (idx >= n) {
-    periodeAar = aar + 1
-    idx = 0
+  // Alle periode-starter for inneværende år.
+  const starter: Date[] = []
+  for (let i = 0; i < n; i++) {
+    starter.push(new Date(aar, Math.round(i * mndPerPeriode), 1))
   }
 
-  const startMnd = Math.round(idx * mndPerPeriode)
-  const start = new Date(periodeAar, startMnd, 1)
-  const slutt = new Date(periodeAar, startMnd + mndPerPeriode, 0)
+  // Kvalifiserte perioder i år (starter >= oppstartsdato hvis oppstart er i år).
+  let kvalifiserte = starter
+  if (oppstartsdato) {
+    const opp = lokalDato(oppstartsdato)
+    if (opp.getFullYear() === aar) {
+      kvalifiserte = starter.filter((s) => s >= opp)
+    } else if (opp.getFullYear() > aar) {
+      kvalifiserte = []
+    }
+  }
+  const planlagtIAar = kvalifiserte.length
+  const hittilIAar = serviceDatoer.filter(
+    (d) => lokalDato(d).getFullYear() === aar
+  ).length
 
-  const t = new Date(iDag.getFullYear(), iDag.getMonth(), iDag.getDate())
+  // Neste uservicede periode. Alle utført i år → periode 1 neste år (full drift).
+  let nesteStart: Date
+  if (hittilIAar < planlagtIAar) {
+    nesteStart = kvalifiserte[hittilIAar]
+  } else {
+    nesteStart = new Date(aar + 1, 0, 1)
+  }
+  const nesteSlutt = new Date(
+    nesteStart.getFullYear(),
+    nesteStart.getMonth() + mndPerPeriode,
+    0
+  )
+
   let status: ServiceStatusType = 'kommende'
-  if (slutt < t) status = 'forfalt'
-  else if (start <= t && t <= slutt) status = 'aktiv'
+  if (nesteSlutt < t) status = 'forfalt'
+  else if (nesteStart <= t && t <= nesteSlutt) status = 'aktiv'
 
-  return { hittilIAar, intervall: n, nesteStart: iso(start), nesteSlutt: iso(slutt), status }
+  return {
+    hittilIAar,
+    planlagtIAar,
+    intervall: n,
+    nesteStart: iso(nesteStart),
+    nesteSlutt: iso(nesteSlutt),
+    status,
+  }
 }

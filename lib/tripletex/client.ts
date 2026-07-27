@@ -10,6 +10,7 @@ export interface TxProject {
   displayName: string | null
   isClosed: boolean
   isOffer: boolean
+  startDate: string | null
   customer: { id: number; name: string } | null
   deliveryAddress: {
     addressLine1: string | null
@@ -115,7 +116,7 @@ export async function hentProsjekter(): Promise<TxProject[]> {
   const token = await getSessionToken()
   return getAll<TxProject>(token, '/project', {
     fields:
-      'id,name,number,displayName,isClosed,isOffer,customer(id,name),deliveryAddress(addressLine1,postalCode,city)',
+      'id,name,number,displayName,isClosed,isOffer,startDate,customer(id,name),deliveryAddress(addressLine1,postalCode,city)',
   })
 }
 

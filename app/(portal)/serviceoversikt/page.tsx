@@ -38,14 +38,18 @@ export default async function ServiceoversiktPage() {
 
   const rader: Rad[] = heiser.map((heis) => ({
     heis,
-    service: beregnServiceStatus(datoerPerHeis.get(heis.id) ?? [], heis.service_intervall),
+    service: beregnServiceStatus(
+      datoerPerHeis.get(heis.id) ?? [],
+      heis.service_intervall,
+      heis.oppstartsdato
+    ),
   }))
 
-  // Summer.
-  const planlagt = rader.reduce((s, r) => s + r.service.intervall, 0)
+  // Summer (planlagt justert for oppstartsdato).
+  const planlagt = rader.reduce((s, r) => s + r.service.planlagtIAar, 0)
   const utfort = rader.reduce((s, r) => s + r.service.hittilIAar, 0)
   const gjenstaar = rader.reduce(
-    (s, r) => s + Math.max(0, r.service.intervall - r.service.hittilIAar),
+    (s, r) => s + Math.max(0, r.service.planlagtIAar - r.service.hittilIAar),
     0
   )
   const etterslep = rader.filter((r) => r.service.status === 'forfalt').length

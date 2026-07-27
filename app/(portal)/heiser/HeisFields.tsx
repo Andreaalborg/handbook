@@ -116,6 +116,19 @@ export function HeisFields({
           />
         </Felt>
 
+        <Felt label="Oppstartsdato (ny/modernisert)" htmlFor="oppstartsdato">
+          <input
+            id="oppstartsdato"
+            name="oppstartsdato"
+            type="date"
+            defaultValue={heis?.oppstartsdato ?? ''}
+            className="form-input"
+          />
+          <p className="mt-1 text-xs text-gray-500">
+            Første året telles kun kvartaler etter denne datoen.
+          </p>
+        </Felt>
+
         <Felt label="Type" htmlFor="type">
           <select
             id="type"

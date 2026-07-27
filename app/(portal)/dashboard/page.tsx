@@ -55,7 +55,11 @@ export default async function DashboardPage() {
     }
     mineHeiser = heiser.map((heis) => ({
       heis,
-      service: beregnServiceStatus(datoerPerHeis.get(heis.id) ?? [], heis.service_intervall),
+      service: beregnServiceStatus(
+        datoerPerHeis.get(heis.id) ?? [],
+        heis.service_intervall,
+        heis.oppstartsdato
+      ),
     }))
   }
 

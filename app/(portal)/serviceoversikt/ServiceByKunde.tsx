@@ -49,7 +49,7 @@ export function ServiceByKunde({ grupper }: { grupper: ServiceKundeGruppe[] }) {
         // Aggregert for kunden: utført / planlagt (år), og om noe ligger bak
         // eller forfaller dette kvartalet.
         const utfort = g.rader.reduce((s, r) => s + r.service.hittilIAar, 0)
-        const planlagt = g.rader.reduce((s, r) => s + r.service.intervall, 0)
+        const planlagt = g.rader.reduce((s, r) => s + r.service.planlagtIAar, 0)
         const bak = g.rader.some((r) => r.service.status !== 'kommende')
         return (
           <div key={g.navn} className="card overflow-hidden">
