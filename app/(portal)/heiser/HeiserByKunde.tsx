@@ -118,140 +118,77 @@ export function HeiserByKunde({ grupper }: { grupper: KundeGruppe[] }) {
             </button>
 
             {apen && (
-              <div className="border-t border-gray-100">
-                {/* Desktop: tabell */}
-                <div className="hidden md:block overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <Th>Heis</Th>
-                        <Th>Kode</Th>
-                        <Th>Tilgangstid</Th>
-                        <Th>Kontakt</Th>
-                        <Th>Kort</Th>
-                        <Th>Service i år</Th>
-                        <Th>Neste service</Th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-100 bg-white">
-                      {g.heiser.map((h) => (
-                        <tr key={h.id} className="hover:bg-gray-50">
-                          <td className="px-4 py-3">
-                            <Link
-                              href={`/heiser/${h.id}`}
-                              className="text-sm font-medium text-blue-700 hover:underline"
-                            >
-                              {h.navn}
-                            </Link>
-                            {h.type === 'engangsjobb' && <EngangsTag />}
-                          </td>
-                          <Td>{h.tilgang_kode}</Td>
-                          <Td>{h.tilgangstider}</Td>
-                          <td className="px-4 py-3">
-                            <Kontakter kontakter={h.kontakter} />
-                          </td>
-                          <td className="px-4 py-3">
-                            <Chips verdier={h.kort} />
-                          </td>
-                          <td className="px-4 py-3">
-                            <ServiceCount status={h.service} />
-                          </td>
-                          <td className="px-4 py-3">
-                            <ServiceRange status={h.service} />
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-
-                {/* Mobil: kompakte kort med «Vis mer» */}
-                <div className="md:hidden divide-y divide-gray-100">
-                  {g.heiser.map((h) => {
-                    const utvidet = apneHeiser.has(h.id)
-                    return (
-                      <div key={h.id} className="px-4 py-3">
-                        {/* Alltid synlig: navn, utført, neste service */}
-                        <div className="flex items-center justify-between gap-2">
-                          <Link
-                            href={`/heiser/${h.id}`}
-                            className="font-medium text-blue-700"
-                          >
-                            {h.navn}
-                            {h.type === 'engangsjobb' && <EngangsTag />}
-                          </Link>
+              <div className="border-t border-gray-100 divide-y divide-gray-100">
+                {/* Kompakte kort med «Vis mer» – alle skjermstørrelser */}
+                {g.heiser.map((h) => {
+                  const utvidet = apneHeiser.has(h.id)
+                  return (
+                    <div key={h.id} className="px-4 py-3">
+                      {/* Alltid synlig: navn, utført, neste service */}
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+                        <Link
+                          href={`/heiser/${h.id}`}
+                          className="font-medium text-blue-700 hover:underline"
+                        >
+                          {h.navn}
+                          {h.type === 'engangsjobb' && <EngangsTag />}
+                        </Link>
+                        <span className="ml-auto flex items-center gap-2">
                           <ServiceCount status={h.service} />
-                        </div>
-                        <div className="mt-1.5 flex items-center gap-2 text-sm">
-                          <span className="text-gray-500">Neste:</span>
                           <ServiceRange status={h.service} />
-                        </div>
+                        </span>
+                      </div>
 
-                        {/* Resten bak «Vis mer» */}
-                        {utvidet && (
-                          <div className="mt-3">
-                            <dl className="grid grid-cols-2 gap-x-3 gap-y-1 text-sm">
-                              <Rad label="Kode" verdi={h.tilgang_kode} />
-                              <Rad label="Tilgangstid" verdi={h.tilgangstider} />
-                            </dl>
-                            <div className="mt-2">
+                      {/* Resten bak «Vis mer» */}
+                      {utvidet && (
+                        <div className="mt-3">
+                          <dl className="grid grid-cols-2 sm:grid-cols-4 gap-x-3 gap-y-1 text-sm">
+                            <Rad label="Kode" verdi={h.tilgang_kode} />
+                            <Rad label="Tilgangstid" verdi={h.tilgangstider} />
+                          </dl>
+                          <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-2">
+                            <div>
                               <span className="text-xs text-gray-400">Kontakt</span>
                               <div className="mt-0.5">
                                 <Kontakter kontakter={h.kontakter} />
                               </div>
                             </div>
-                            <div className="mt-2">
+                            <div>
                               <span className="text-xs text-gray-400">Kort</span>
                               <div className="mt-0.5">
                                 <Chips verdier={h.kort} />
                               </div>
                             </div>
-                            {h.parkering && (
-                              <div className="mt-2">
-                                <span className="text-xs text-gray-400">
-                                  Parkering
-                                </span>
-                                <p className="text-sm text-gray-700 whitespace-pre-wrap">
-                                  {h.parkering}
-                                </p>
-                              </div>
-                            )}
                           </div>
-                        )}
+                          {h.parkering && (
+                            <div className="mt-2">
+                              <span className="text-xs text-gray-400">
+                                Parkering
+                              </span>
+                              <p className="text-sm text-gray-700 whitespace-pre-wrap">
+                                {h.parkering}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      )}
 
-                        <button
-                          type="button"
-                          onClick={() => toggleHeis(h.id)}
-                          className="mt-2 text-sm font-medium text-blue-600 hover:text-blue-700"
-                        >
-                          {utvidet ? 'Vis mindre' : 'Vis mer'}
-                        </button>
-                      </div>
-                    )
-                  })}
-                </div>
+                      <button
+                        type="button"
+                        onClick={() => toggleHeis(h.id)}
+                        className="mt-2 text-sm font-medium text-blue-600 hover:text-blue-700"
+                      >
+                        {utvidet ? 'Vis mindre' : 'Vis mer'}
+                      </button>
+                    </div>
+                  )
+                })}
               </div>
             )}
           </div>
         )
       })}
     </div>
-  )
-}
-
-function Th({ children }: { children: React.ReactNode }) {
-  return (
-    <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 whitespace-nowrap">
-      {children}
-    </th>
-  )
-}
-
-function Td({ children }: { children: React.ReactNode }) {
-  return (
-    <td className="px-4 py-3 text-sm text-gray-600 whitespace-nowrap">
-      {children || '—'}
-    </td>
   )
 }
 
