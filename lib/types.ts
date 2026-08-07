@@ -211,9 +211,15 @@ function lokalDato(s: string): Date {
 
 /**
  * Periode-basert service-status. Året deles i `intervall` like perioder
- * (4/år = kvartaler). For nye/moderniserte heiser teller kun perioder som
- * *starter etter* oppstartsdato det første året – slik at en heis satt opp
- * midt i året ikke får etterslep for kvartaler den ikke var i drift.
+ * (4/år = kvartaler).
+ *
+ * Telleren teller DEKKEDE PERIODER, ikke enkeltbesøk: flere servicedager i
+ * samme kvartal (f.eks. en større jobb ført på Service/HK) teller som at det
+ * kvartalet er dekket – aldri mer enn planlagt.
+ *
+ * For nye/moderniserte heiser teller kun perioder som starter etter
+ * oppstartsdato det første året – slik at en heis satt opp midt i året ikke
+ * får etterslep for kvartaler den ikke var i drift.
  */
 export function beregnServiceStatus(
   serviceDatoer: string[],
@@ -226,39 +232,46 @@ export function beregnServiceStatus(
   const aar = iDag.getFullYear()
   const t = new Date(iDag.getFullYear(), iDag.getMonth(), iDag.getDate())
 
-  // Alle periode-starter for inneværende år.
-  const starter: Date[] = []
+  // Alle perioder (start + slutt) for inneværende år.
+  const alle: { start: Date; slutt: Date }[] = []
   for (let i = 0; i < n; i++) {
-    starter.push(new Date(aar, Math.round(i * mndPerPeriode), 1))
+    const start = new Date(aar, Math.round(i * mndPerPeriode), 1)
+    const slutt = new Date(aar, Math.round(i * mndPerPeriode) + mndPerPeriode, 0)
+    alle.push({ start, slutt })
   }
 
   // Kvalifiserte perioder i år (starter >= oppstartsdato hvis oppstart er i år).
-  let kvalifiserte = starter
+  let kvalifiserte = alle
   if (oppstartsdato) {
     const opp = lokalDato(oppstartsdato)
     if (opp.getFullYear() === aar) {
-      kvalifiserte = starter.filter((s) => s >= opp)
+      kvalifiserte = alle.filter((p) => p.start >= opp)
     } else if (opp.getFullYear() > aar) {
       kvalifiserte = []
     }
   }
   const planlagtIAar = kvalifiserte.length
-  const hittilIAar = serviceDatoer.filter(
-    (d) => lokalDato(d).getFullYear() === aar
-  ).length
 
-  // Neste uservicede periode. Alle utført i år → periode 1 neste år (full drift).
+  // Hvilke kvalifiserte perioder har minst ett servicebesøk?
+  const datoerIAar = serviceDatoer
+    .map(lokalDato)
+    .filter((d) => d.getFullYear() === aar)
+  const dekket = kvalifiserte.map((p) =>
+    datoerIAar.some((d) => d >= p.start && d <= p.slutt)
+  )
+  const hittilIAar = dekket.filter(Boolean).length
+
+  // Neste = første udekkede periode; alle dekket → periode 1 neste år.
+  const forsteUdekket = dekket.findIndex((x) => !x)
   let nesteStart: Date
-  if (hittilIAar < planlagtIAar) {
-    nesteStart = kvalifiserte[hittilIAar]
+  let nesteSlutt: Date
+  if (forsteUdekket >= 0) {
+    nesteStart = kvalifiserte[forsteUdekket].start
+    nesteSlutt = kvalifiserte[forsteUdekket].slutt
   } else {
     nesteStart = new Date(aar + 1, 0, 1)
+    nesteSlutt = new Date(aar + 1, mndPerPeriode, 0)
   }
-  const nesteSlutt = new Date(
-    nesteStart.getFullYear(),
-    nesteStart.getMonth() + mndPerPeriode,
-    0
-  )
 
   let status: ServiceStatusType = 'kommende'
   if (nesteSlutt < t) status = 'forfalt'
