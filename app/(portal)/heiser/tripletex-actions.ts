@@ -143,11 +143,14 @@ export async function syncFraTripletex(): Promise<SyncState> {
       }
       const besok = new Map<string, Besok>()
       for (const e of entries) {
-        if (!e.chargeable) continue
         if (!e.project || !heisMap.has(e.project.id)) continue
         const heisId = heisMap.get(e.project.id)!
         const akt = e.activity?.name?.trim().toLowerCase() ?? ''
         const type: LoggType = akt === 'service/hk' ? 'service' : 'annet'
+        // Service/HK teller ALLTID (faktureres via 6-mnd-avtalen, kan være
+        // ikke-fakturerbar). Andre aktiviteter må være fakturerbare for å
+        // holde adm/ferie/syk utenfor historikken.
+        if (type !== 'service' && !e.chargeable) continue
         const key = `${heisId}|${e.date}|${type}`
         let b = besok.get(key)
         if (!b) {
