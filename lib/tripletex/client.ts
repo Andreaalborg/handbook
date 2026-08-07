@@ -23,6 +23,7 @@ export interface TxTimesheetEntry {
   id: number
   date: string
   hours: number
+  chargeable: boolean
   comment: string | null
   employee: { firstName: string | null; lastName: string | null } | null
   project: { id: number } | null
@@ -130,7 +131,7 @@ export async function hentTimeforinger(
     dateFrom,
     dateTo,
     fields:
-      'id,date,hours,comment,employee(firstName,lastName),project(id),activity(name)',
+      'id,date,hours,chargeable,comment,employee(firstName,lastName),project(id),activity(name)',
   })
 }
 

@@ -111,40 +111,73 @@ export async function syncFraTripletex(): Promise<SyncState> {
       }
     }
 
-    // ---- 3. Timeføringer -> historikk (dedupe på tripletex_entry_id) ----
+    // ---- 3. Timeføringer -> historikk ----
+    // Regler:
+    //  - Kun fakturerbare føringer (chargeable) = reelt kundearbeid.
+    //    Prosjektadministrasjon, ferie, syk o.l. holdes utenfor.
+    //  - Aktivitet «Service/HK» (eksakt) = servicebesøk; alt annet = 'annet'.
+    //  - Dedupe per heis+dato+type: to montører samme dag = ETT besøk.
+    //    Navn slås sammen («Per, Kari»), kommentarer likeså.
+    //  - Finnes det allerede en loggføring (også manuell) for samme
+    //    heis+dato+type, hoppes den over.
     // Egen try/catch: timeliste-tilgang kan mangle. Da skal heis-synken
     // likevel fullføre (bare uten historikk).
     let loggAntall = 0
     try {
       const tilDato = new Date()
       const fraDato = new Date()
-      // Hent 2 år tilbake så hele 2025 kommer med når timeliste-tilgang er på.
+      // Hent 2 år tilbake så hele 2025-historikken kommer med.
       fraDato.setFullYear(fraDato.getFullYear() - 2)
       const entries = await hentTimeforinger(
         fraDato.toISOString().slice(0, 10),
         tilDato.toISOString().slice(0, 10)
       )
 
+      interface Besok {
+        heis_id: string
+        dato: string
+        type: LoggType
+        navn: Set<string>
+        kommentarer: string[]
+        entryId: number
+      }
+      const besok = new Map<string, Besok>()
+      for (const e of entries) {
+        if (!e.chargeable) continue
+        if (!e.project || !heisMap.has(e.project.id)) continue
+        const heisId = heisMap.get(e.project.id)!
+        const akt = e.activity?.name?.trim().toLowerCase() ?? ''
+        const type: LoggType = akt === 'service/hk' ? 'service' : 'annet'
+        const key = `${heisId}|${e.date}|${type}`
+        let b = besok.get(key)
+        if (!b) {
+          b = { heis_id: heisId, dato: e.date, type, navn: new Set(), kommentarer: [], entryId: e.id }
+          besok.set(key, b)
+        }
+        const n = navnFra(e.employee)
+        if (n) b.navn.add(n)
+        if (e.comment?.trim()) b.kommentarer.push(e.comment.trim())
+        b.entryId = Math.min(b.entryId, e.id)
+      }
+
+      // Ikke dupliser dager som allerede er logget (synket eller manuelt).
       const { data: eksLogg } = await supabase
         .from('heis_logg')
-        .select('tripletex_entry_id')
-        .not('tripletex_entry_id', 'is', null)
-      const sett = new Set((eksLogg ?? []).map((l) => l.tripletex_entry_id))
+        .select('heis_id, dato, type')
+      const eksSett = new Set(
+        (eksLogg ?? []).map((l) => `${l.heis_id}|${l.dato}|${l.type}`)
+      )
 
-      const nyeLogg = entries
-        .filter((e) => e.project && heisMap.has(e.project.id) && !sett.has(e.id))
-        .map((e) => {
-          const akt = e.activity?.name?.toLowerCase() ?? ''
-          const type: LoggType = akt.includes('service') ? 'service' : 'annet'
-          return {
-            heis_id: heisMap.get(e.project!.id)!,
-            dato: e.date,
-            type,
-            utfort_av: navnFra(e.employee),
-            kommentar: e.comment,
-            tripletex_entry_id: e.id,
-          }
-        })
+      const nyeLogg = [...besok.values()]
+        .filter((b) => !eksSett.has(`${b.heis_id}|${b.dato}|${b.type}`))
+        .map((b) => ({
+          heis_id: b.heis_id,
+          dato: b.dato,
+          type: b.type,
+          utfort_av: [...b.navn].join(', ') || null,
+          kommentar: [...new Set(b.kommentarer)].join(' | ') || null,
+          tripletex_entry_id: b.entryId,
+        }))
 
       for (let i = 0; i < nyeLogg.length; i += 500) {
         await supabase.from('heis_logg').insert(nyeLogg.slice(i, i + 500))
